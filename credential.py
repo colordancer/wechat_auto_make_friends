@@ -1,11 +1,18 @@
 #!/usr/bin/env python
 # coding=utf-8
 import json, os, urllib, time, http, re, sys, subprocess, xml, friendsGroup
-
+import urllib.request, urllib.parse, urllib.error, http.cookiejar, xml.dom.minidom
 class Credential():
     CREDENTIAL_FILE = 'credential'
 
     def __init__(self):
+        self.clearParams()
+        self.QRImagePath = os.getcwd() + '/qrcode.jpg'
+        self.tip = 0
+
+        self.tryLoadDataFromFile()
+
+    def clearParams(self):
         self.params = {
             'uuid': '',
             'base_uri': '',
@@ -18,11 +25,8 @@ class Credential():
             'groups': {},
             'myUserName': '',
             'valid': False,
+            'synckey': {},
         }
-        self.QRImagePath = os.getcwd() + '/qrcode.jpg'
-        self.tip = 0
-
-        self.tryLoadDataFromFile()
 
     def tryLoadDataFromFile(self):
         try:
@@ -160,7 +164,7 @@ class Credential():
         ContactList = dic['ContactList']
         My = dic['User']
         self.params['myUserName'] = My['UserName']
-        self.params['SyncKey'] = dic['SyncKey']
+        self.params['synckey'] = dic['SyncKey']
 
         friendsGroup.fromRawContactList(ContactList, self.params['groups'])
 
@@ -171,6 +175,10 @@ class Credential():
         return True
 
     def refreshCredential(self):
+        self.clearParams()
+        with open(self.CREDENTIAL_FILE, 'w') as f:
+            f.write('')
+
         print(u'欢迎使用情怀版微信，正在生成登录二维码...')
 
         opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
@@ -246,6 +254,19 @@ class Credential():
 
         friendsGroup.fromRawContactList(MemberList, self.params['groups'])
 
+        # 根据指定的Username发消息
+    def sendMsg(MyUserName, ToUserName, msg):
+        url = base_uri + '/webwxsendmsg?pass_ticket=%s' % (pass_ticket)
+        params = {
+            "BaseRequest": BaseRequest,
+            "Msg": {"Type": 1, "Content": msg, "FromUserName": MyUserName, "ToUserName": ToUserName},
+        }
+
+        json_obj = json.dumps(params,ensure_ascii=False).encode('utf-8')#ensure_ascii=False防止中文乱码
+        request = urllib.request.Request(url=url, data=json_obj)
+        request.add_header('ContentType', 'application/json; charset=UTF-8')
+        urllib.request.urlopen(request)
+
     def webwxsync(self):
         url = self.params['base_uri'] + '/webwxsync?type=ex&pass_ticket=%s&skey=%s&r=%s' % \
             (self.params['pass_ticket'], self.params['skey'], int(time.time()))
@@ -261,8 +282,18 @@ class Credential():
         response = urllib.request.urlopen(request)
         data = response.read()
         data = data.decode('utf-8', 'replace')
-
-        print(data)
+        dic = json.loads(data)
+        self.params['synckey'] = dic['SyncKey']
+        friendsGroup.fromRawContactList(dic['ModContactList'], self.params['groups'])
+        for newMessage in dic['AddMsgList']:
+            if newMessage['FromUserName'] in self.params['groups']:
+                group = self.params['groups'][newMessage['FromUserName']]
+                regx = r'は(\S+?)さんをグループチャットに招待しました'
+                pm = re.search(regx, newMessage['Content'])
+                if pm:
+                    group['newMember'][pm.group(1)] = True
+                    continue # do not update last update time
+                group['update'] = max(group['update'], newMessage['CreateTime'])
 
     def writeToFile(self):
         with open(self.CREDENTIAL_FILE, 'w') as f:
