@@ -13,6 +13,7 @@ import math
 import subprocess
 import json
 import threading
+from credential import Credential
 
 DEBUG = False
 
@@ -29,7 +30,6 @@ wxsid = ''
 wxuin = ''
 pass_ticket = ''
 deviceId = 'e000000000000000'
-SyncKey = {}
 BaseRequest = {}
 
 ContactList = []
@@ -132,20 +132,6 @@ def login():
     response = urllib.request.urlopen(request)
     data = response.read()
 
-    # print data
-
-    '''
-        <error>
-            <ret>0</ret>
-            <message>OK</message>
-            <skey>xxx</skey>
-            <wxsid>xxx</wxsid>
-            <wxuin>xxx</wxuin>
-            <pass_ticket>xxx</pass_ticket>
-            <isgrayscale>1</isgrayscale>
-        </error>
-    '''
-
     doc = xml.dom.minidom.parseString(data)
     root = doc.documentElement
 
@@ -175,7 +161,6 @@ def login():
 
 
 def webwxinit():
-    global SyncKey
     url = base_uri + '/webwxinit?pass_ticket=%s&skey=%s&r=%s' % (pass_ticket, skey, int(time.time()))
     params = {
         'BaseRequest': BaseRequest
@@ -263,9 +248,10 @@ def loginProcess():
         return
 
     MemberList = webwxgetcontact()
-    MemberCount = len(MemberList)
 
 def main():
+    credential = Credential()
+    credential.refreshCredential()
     return
 
 if __name__ == '__main__':
