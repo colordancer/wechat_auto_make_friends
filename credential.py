@@ -280,18 +280,18 @@ class Credential():
             self.onTunnelFail()
 
     def webwxsync(self):
-        url = 'https://webpush2.wechat.com/cgi-bin/mmwebwx-bin/synccheck' + \
-            '?pass_ticket=%s&skey=%s&r=%s&synckey=%s' % \
-            (self.params['pass_ticket'], self.params['skey'], int(time.time()), 
-                Sync.getStringKey(self.params['synckey']))
-        request = urllib.request.Request(url=url)
-        request.add_header('ContentType', 'application/json; charset=UTF-8')
-        response = urllib.request.urlopen(request)
-        data = response.read()
-        if str(data).find('selector:"0"') !== -1:
-            return
+        # url = 'https://webpush2.wechat.com/cgi-bin/mmwebwx-bin/synccheck' + \
+        #     '?pass_ticket=%s&skey=%s&r=%s&synckey=%s' % \
+        #     (self.params['pass_ticket'], self.params['skey'], int(time.time()), 
+        #         Sync.getStringKey(self.params['synckey']))
+        # request = urllib.request.Request(url=url)
+        # request.add_header('ContentType', 'application/json; charset=UTF-8')
+        # response = urllib.request.urlopen(request)
+        # data = response.read()
+        # if str(data).find('selector:"0"') != -1:
+        #     return
 
-        print('here')
+        # print('here')
         url = self.params['base_uri'] + '/webwxsync?pass_ticket=%s&skey=%s&r=%s' % \
             (self.params['pass_ticket'], self.params['skey'], int(time.time()))
         params = {

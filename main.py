@@ -5,7 +5,7 @@ from credential import Credential
 import friendsGroup
 import time
 
-SYNC_INTERVAL = 5
+SYNC_INTERVAL = 30
 
 def main():
     credential = Credential()
