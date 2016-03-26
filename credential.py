@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
-import json, os, urllib, time, http, re, sys, subprocess, xml, friendsGroup
+import json, os, urllib, time, http, re, sys, subprocess, xml, friendsGroup, Sync
 import urllib.request, urllib.parse, urllib.error, http.cookiejar, xml.dom.minidom
 
 class Credential():
@@ -27,7 +27,7 @@ class Credential():
             'groups': {},
             'myUserName': '',
             'valid': False,
-            'synckey': {},
+            'synckey': {'List': [], 'Count': 0},
         }
 
     def tryLoadDataFromFile(self):
@@ -280,7 +280,19 @@ class Credential():
             self.onTunnelFail()
 
     def webwxsync(self):
-        url = self.params['base_uri'] + '/webwxsync?type=ex&pass_ticket=%s&skey=%s&r=%s' % \
+        url = 'https://webpush2.wechat.com/cgi-bin/mmwebwx-bin/synccheck' + \
+            '?pass_ticket=%s&skey=%s&r=%s&synckey=%s' % \
+            (self.params['pass_ticket'], self.params['skey'], int(time.time()), 
+                Sync.getStringKey(self.params['synckey']))
+        request = urllib.request.Request(url=url)
+        request.add_header('ContentType', 'application/json; charset=UTF-8')
+        response = urllib.request.urlopen(request)
+        data = response.read()
+        if str(data).find('selector:"0"') !== -1:
+            return
+
+        print('here')
+        url = self.params['base_uri'] + '/webwxsync?pass_ticket=%s&skey=%s&r=%s' % \
             (self.params['pass_ticket'], self.params['skey'], int(time.time()))
         params = {
             "BaseRequest": self.getBaseRequest(),
@@ -295,8 +307,7 @@ class Credential():
         data = response.read()
         data = data.decode('utf-8', 'replace')
         dic = json.loads(data)
-        if dic['SyncKey']['Count'] > 3:
-            self.params['synckey'] = dic['SyncKey']
+        Sync.updateKey(self.params['synckey'], dic['SyncKey'])
         if dic['SyncKey']['Count'] == 0:
             self.onTunnelFail()
         friendsGroup.fromRawContactList(dic['ModContactList'], self.params['groups'])

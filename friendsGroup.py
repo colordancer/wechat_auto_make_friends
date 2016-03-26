@@ -49,6 +49,9 @@ def trySendGreeting(groupName, group, credential):
 
 def trySendMaching(groupName, group, credential):
     print("trySendMaching")
+    for user in list(group['users'].keys()):
+        if group['users'][user] in ['阿云', '八戒', 'Yunzhi']:
+            del group['users'][user]
     if len(group['users']) < 2:
         return False
     if time.time() - group['update'] < QUITE_INTERVAL:
