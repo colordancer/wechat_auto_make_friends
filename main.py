@@ -9,11 +9,14 @@ SYNC_INTERVAL = 5
 
 def main():
     credential = Credential()
-    credential.refreshCredential()
+    if not credential.params['valid']:
+        credential.refreshCredential()
     while True:
         credential.webwxsync()
         for group in credential.params['groups']:
-            friendsGroup.trySendGreeting(credential.params['groups'][group], credential)
+            if friendsGroup.trySendGreeting(group, credential.params['groups'][group], credential):
+                continue
+            friendsGroup.trySendMaching(group, credential.params['groups'][group], credential)
         time.sleep(SYNC_INTERVAL)
     return
 
