@@ -202,6 +202,21 @@ class Credential():
 
         self.writeToFile()
 
+    def getContactList(self):
+        url = self.params['base_uri'] + '/webwxgetcontact?pass_ticket=%s&skey=%s&r=%s' % \
+            (self.params['pass_ticket'], self.params['skey'], int(time.time()))
+
+        request = urllib.request.Request(url=url)
+        request.add_header('ContentType', 'application/json; charset=UTF-8')
+        response = urllib.request.urlopen(request)
+        data = response.read()
+
+        data = data.decode('utf-8', 'replace')
+
+        dic = json.loads(data)
+        MemberList = dic['MemberList']
+        print(friendsGroup.fromRawContactList(MemberList))
+
     def writeToFile(self):
         with open(self.CREDENTIAL_FILE, 'w') as f:
             f.write(json.dumps(self.params))
