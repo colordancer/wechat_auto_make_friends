@@ -221,37 +221,11 @@ def sendMsg(MyUserName, ToUserName, msg):
     request.add_header('ContentType', 'application/json; charset=UTF-8')
     urllib.request.urlopen(request)
 
-def loginProcess():
-    print(u'欢迎使用情怀版微信，正在生成登录二维码...')
-
-    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
-    urllib.request.install_opener(opener)
-
-    if not getUUID():
-        print(u'获取uuid失败')
-        return
-
-    showQRImage()
-    time.sleep(1)
-
-    while waitForLogin() != '200':
-        pass
-
-    os.remove(QRImagePath)
-
-    if not login():
-        print(u'登录失败')
-        return
-
-    if not webwxinit():
-        print(u'初始化失败')
-        return
-
-    MemberList = webwxgetcontact()
 
 def main():
     credential = Credential()
     credential.refreshCredential()
+    credential.webwxsync(list(credential.params['groups'].keys())[0])
     return
 
 if __name__ == '__main__':

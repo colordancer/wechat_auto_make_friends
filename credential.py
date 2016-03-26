@@ -15,7 +15,7 @@ class Credential():
             'wxuin': '',
             'pass_ticket': '',
             'deviceId': 'e000000000000000',
-            'groups': [],
+            'groups': {},
             'myUserName': '',
             'valid': False,
         }
@@ -160,8 +160,9 @@ class Credential():
         ContactList = dic['ContactList']
         My = dic['User']
         self.params['myUserName'] = My['UserName']
+        self.params['SyncKey'] = dic['SyncKey']
 
-        self.params['groups'] = friendsGroup.fromRawContactList(ContactList)
+        friendsGroup.fromRawContactList(ContactList, self.params['groups'])
 
         Ret = dic['BaseResponse']['Ret']
         if Ret != 0:
@@ -200,7 +201,34 @@ class Credential():
 
         self.params['valid'] = True
 
+        self.getContactList()
+
+        for groupUserName in self.params['groups']:
+            self.getGroupMember(groupUserName)
+
         self.writeToFile()
+
+    def getGroupMember(self, groupUserName):
+        url = self.params['base_uri'] + '/webwxbatchgetcontact?type=ex&pass_ticket=%s&skey=%s&r=%s' % \
+            (self.params['pass_ticket'], self.params['skey'], int(time.time()))
+        params = {
+            "BaseRequest": self.getBaseRequest(),
+            "Count": 1,
+            "List": [{"UserName": groupUserName}],
+        }
+
+        json_obj = json.dumps(params,ensure_ascii=False).encode('utf-8')#ensure_ascii=False防止中文乱码
+        request = urllib.request.Request(url=url, data=json_obj)
+
+        request.add_header('ContentType', 'application/json; charset=UTF-8')
+        response = urllib.request.urlopen(request)
+        data = response.read()
+        data = data.decode('utf-8', 'replace')
+
+        dic = json.loads(data)
+        MemberList = dic['ContactList']
+        friendsGroup.fromRawContactList(MemberList, self.params['groups'])
+
 
     def getContactList(self):
         url = self.params['base_uri'] + '/webwxgetcontact?pass_ticket=%s&skey=%s&r=%s' % \
@@ -215,7 +243,26 @@ class Credential():
 
         dic = json.loads(data)
         MemberList = dic['MemberList']
-        print(friendsGroup.fromRawContactList(MemberList))
+
+        friendsGroup.fromRawContactList(MemberList, self.params['groups'])
+
+    def webwxsync(self):
+        url = self.params['base_uri'] + '/webwxsync?type=ex&pass_ticket=%s&skey=%s&r=%s' % \
+            (self.params['pass_ticket'], self.params['skey'], int(time.time()))
+        params = {
+            "BaseRequest": self.getBaseRequest(),
+            "SyncKey": self.params['synckey'],
+        }
+
+        json_obj = json.dumps(params,ensure_ascii=False).encode('utf-8')#ensure_ascii=False防止中文乱码
+        request = urllib.request.Request(url=url, data=json_obj)
+
+        request.add_header('ContentType', 'application/json; charset=UTF-8')
+        response = urllib.request.urlopen(request)
+        data = response.read()
+        data = data.decode('utf-8', 'replace')
+
+        print(data)
 
     def writeToFile(self):
         with open(self.CREDENTIAL_FILE, 'w') as f:
