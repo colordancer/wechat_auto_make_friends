@@ -47,6 +47,19 @@ def trySendGreeting(groupName, group, credential):
     group['update'] = time.time()
     return True
 
+def getMaching(groupName, group):
+    people = random.sample(set(group['users'].values()), 2)
+    ques = random.choice(questions)
+    return '@' + people[0] + ', ' + ques + '\n' + \
+        '@' + people[1] + ', ' + ques
+
+def sendMaching(groupName, group, credential):
+    print("SendMaching")
+    msg = getMaching(groupName, group)
+    credential.sendMsg(groupName, msg)
+    group['update'] = time.time()
+    return True
+    
 def trySendMaching(groupName, group, credential):
     print("trySendMaching")
     for user in list(group['users'].keys()):
@@ -56,11 +69,4 @@ def trySendMaching(groupName, group, credential):
         return False
     if time.time() - group['update'] < QUITE_INTERVAL:
         return False
-    print("SendMaching")
-    people = random.sample(set(group['users'].values()), 2)
-    ques = random.choice(questions)
-    msg = '@' + people[0] + ', ' + ques + '\n' + \
-        '@' + people[1] + ', ' + ques
-    credential.sendMsg(groupName, msg)
-    group['update'] = time.time()
-    return True
+    return sendMaching(groupName, group, credential)
